@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Kourel App</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial;
+            background: #0f172a;
+            color: white;
+        }
+
+        header {
+            background: #1e293b;
+            padding: 20px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .container {
+            padding: 15px;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .card {
+            background: #1e293b;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .name {
+            font-size: 15px;
+        }
+
+        .btns button {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 8px;
+            margin-left: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .present {
+            background: #22c55e;
+            color: white;
+        }
+
+        .absent {
+            background: #ef4444;
+            color: white;
+        }
+
+        .save,
+        .send {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .save {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .send {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .status {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>📱 DAARA NUURU DARAYNI TOUBA THIALLÉ</header>
+
+    <div class="container">
+
+        <select id="jour" onchange="charger()">
+            <option>Lundi & Jeudi</option>
+            <option>Mardi & Vendredi</option>
+            <option>Mercredi & Samedi</option>
+        </select>
+
+        <div id="liste"></div>
+
+        <button class="save" onclick="sauvegarder()">💾 Sauvegarder</button>
+        <button class="send" onclick="envoyer()">📤 Envoyer WhatsApp</button>
+        <button class="save" onclick="stats()">📊 Voir statistiques</button>
+        <button class="save" onclick="voirHistorique()">📅 Historique</button>
+        <button class="save" onclick="loginAdmin()">🔐 Mode Admin</button>
+
+    </div>
+
+    <script>
+
+        let schedule = {
+            "Lundi & Jeudi": [
+                "Djiby Diagne", "Moussa Ndour", "Matar Diagne", "Diop",
+                "Moustapha Sall", "Bay Cheikh Diakhate", "Mor Ndour", "O Pape Laye"
+            ],
+
+            "Mardi & Vendredi": [
+                "Bamba Diagne", "Ousmane Diop", "Bamba Ndiaye", "Birame Sall",
+                "Moukhamed Jr", "Bamba Alima", "Khadime Sall Mbour",
+                "Moussa Ndour", "Mame Mor Dieng"
+            ],
+
+            "Mercredi & Samedi": [
+                "Pape Mahtar Dieng", "Ballah Ndour", "Mame Cheikh Diagne",
+                "J. Moukhamed", "Abo Seck", "Abdou Rahmane", "Mbaye Ndiaye"
+            ]
+        };
+
+        let presences = JSON.parse(localStorage.getItem("presences")) || {};
+
+        function charger() {
+            let jour = document.getElementById("jour").value;
+            let liste = document.getElementById("liste");
+            liste.innerHTML = "";
+
+            schedule[jour].forEach(nom => {
+
+                let statut = (presences[jour] && presences[jour][nom]) ? presences[jour][nom] : "";
+
+                liste.innerHTML += `
+      <div class="card">
+        <div>
+          <div class="name">${nom}</div>
+          <div class="status">${statut}</div>
+        </div>
+
+        <div class="btns">
+          <button class="present" onclick="marquer('${jour}','${nom}','Présent')">✔</button>
+          <button class="absent" onclick="marquer('${jour}','${nom}','Absent')">✖</button>
+        </div>
+      </div>
+    `;
+            });
+        }
+
+        function marquer(jour, nom, statut) {
+            if (!presences[jour]) {
+                presences[jour] = {};
+            }
+            presences[jour][nom] = statut;
+            charger();
+        }
+
+        function sauvegarder() {
+            localStorage.setItem("presences", JSON.stringify(presences));
+            alert("Sauvegardé ✔");
+        }
+
+        function envoyer() {
+
+            let jour = document.getElementById("jour").value;
+
+            let presents = [];
+            let absents = [];
+
+            schedule[jour].forEach(nom => {
+                let statut = (presences[jour] && presences[jour][nom]) ? presences[jour][nom] : "";
+
+                if (statut === "Présent") presents.push(nom);
+                else if (statut === "Absent") absents.push(nom);
+            });
+
+            let msg = "DAARA NUURU DARAYNI TOUBA THIALLÉ\n\n";
+            msg += "📅 " + jour + "\n\n";
+
+            msg += "✅ Présents:\n";
+            presents.forEach(n => msg += "- " + n + "\n");
+
+            msg += "\n❌ Absents:\n";
+            absents.forEach(n => msg += "- " + n + "\n");
+
+            let url = "https://wa.me/?text=" + encodeURIComponent(msg);
+            window.open(url, "_blank");
+        }
+
+        charger();
+        function stats() {
+
+            let jour = document.getElementById("jour").value;
+
+            let presents = 0;
+            let absents = 0;
+
+            schedule[jour].forEach(nom => {
+                let statut = (presences[jour] && presences[jour][nom]) ? presences[jour][nom] : "";
+
+                if (statut === "Présent") {
+                    presents++;
+                } else if (statut === "Absent") {
+                    absents++;
+                }
+            });
+
+            alert(
+                "📊 STATISTIQUES - " + jour + "\n\n" +
+                "✅ Présents : " + presents + "\n" +
+                "❌ Absents : " + absents
+            );
+        }
+        let historique = JSON.parse(localStorage.getItem("historique")) || {};
+
+        function sauvegarder() {
+
+            let jour = document.getElementById("jour").value;
+
+            if (!historique[jour]) {
+                historique[jour] = [];
+            }
+
+            historique[jour].push({
+                date: new Date().toLocaleString(),
+                data: JSON.parse(JSON.stringify(presences[jour] || {}))
+            });
+
+            localStorage.setItem("historique", JSON.stringify(historique));
+
+            alert("Sauvegardé dans l'historique ✔");
+        }
+        function voirHistorique() {
+
+            let jour = document.getElementById("jour").value;
+
+            if (!historique[jour] || historique[jour].length === 0) {
+                alert("Aucun historique pour ce jour ❌");
+                return;
+            }
+
+            let msg = "📅 HISTORIQUE - " + jour + "\n\n";
+
+            historique[jour].forEach((item, index) => {
+                msg += "🕒 " + item.date + "\n";
+
+                let data = item.data;
+
+                let presents = [];
+                let absents = [];
+
+                schedule[jour].forEach(nom => {
+                    if (data[nom] === "Présent") presents.push(nom);
+                    else absents.push(nom);
+                });
+
+                msg += "✅ Présents: " + presents.length + "\n";
+                msg += "❌ Absents: " + absents.length + "\n\n";
+            });
+
+            alert(msg);
+        }
+        let adminConnecte = false;
+
+        function loginAdmin() {
+            let pass = prompt("Entrer le mot de passe admin :");
+
+            if (pass === "KOUREL1TT2") {
+                adminConnecte = true;
+                alert("Accès admin activé ✔");
+            } else {
+                alert("Mot de passe incorrect ❌");
+            }
+        }
+        function marquer(jour, nom, statut) {
+
+            if (!adminConnecte) {
+                alert("Vous devez être admin pour modifier ❌");
+                return;
+            }
+
+            if (!presences[jour]) {
+                presences[jour] = {};
+            }
+
+            presences[jour][nom] = statut;
+            charger();
+        }
+
+    </script>
+
+</body>
+
+</html>
